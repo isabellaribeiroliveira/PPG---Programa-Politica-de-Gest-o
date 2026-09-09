@@ -42,12 +42,20 @@ function buildParticipants(campaignId, count, pct100Count){
   return list;
 }
 
+function isoLocal(d){
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+const _hoje = new Date();
+const _inicioC1 = new Date(_hoje.getTime() - 20*24*60*60*1000);
+const _fimC1 = new Date(_hoje.getTime() + 20*24*60*60*1000);
+
 let campaigns = [
   {
     id:"c1", nome:"PPG 2026.1 – Segurança da Informação",
     descricao:"Avaliação sobre práticas de segurança da informação e proteção de dados corporativos.",
     objetivo:"Reforçar a cultura de segurança da informação entre todos os colaboradores.",
-    inicio:"2026-06-01T08:00", fim:"2026-07-30T18:00",
+    inicio:isoLocal(_inicioC1), fim:isoLocal(_fimC1),
     qtdGanhadores:4, premio:"Vale-compras R$ 200,00", criterios:"Nenhum critério adicional definido.",
     status:"andamento", ganhadores:null,
     questoes:[
@@ -144,6 +152,7 @@ function logAction(acao, detalhe){
   actionLog.unshift({acao, detalhe: detalhe||"", usuario: currentUser ? currentUser.nome : "Sistema", data:new Date()});
   const sec = document.getElementById('sec-auditoria');
   if(sec && sec.classList.contains('active')) renderAuditoria();
+  saveState();
 }
 function renderAuditoria(){
   const tbody = document.getElementById('tblAuditoria');
@@ -158,6 +167,55 @@ let historyLog = [];
 let editingCampaignId = null;
 let quizState = null;
 let editingBQCodigo = null;
+
+/* ======================= PERSISTÊNCIA (localStorage) =======================
+   O app é só HTML/CSS/JS, sem servidor — então "banco de dados" aqui significa
+   salvar automaticamente no navegador de quem está usando. Os dados sobrevivem
+   a um recarregamento de página (F5) ou a fechar e reabrir a aba, permitindo
+   acompanhar o processo ao longo do tempo. Isso é local a cada navegador/
+   computador — não é compartilhado entre pessoas diferentes (para isso seria
+   necessário um backend real). */
+const STORAGE_KEY = "ppg_app_state_v1";
+const STATE_VERSION = 2; // aumente este número sempre que a "forma" dos dados salvos mudar de forma incompatível
+
+function dateReviver(key, value){
+  if(typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)) return new Date(value);
+  return value;
+}
+function saveState(){
+  try{
+    const state = {
+      version: STATE_VERSION,
+      campaigns, participants, wonHistory, questionBank, actionLog,
+      currentUser, currentRole,
+      darkMode: document.body.classList.contains('dark'),
+      savedAt: new Date()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }catch(e){ console.warn("Não foi possível salvar os dados localmente:", e); }
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const state = JSON.parse(raw, dateReviver);
+    if(state.version !== STATE_VERSION){
+      console.warn("Dados salvos de uma versão anterior do app — ignorando e começando do zero.");
+      localStorage.removeItem(STORAGE_KEY);
+      return false;
+    }
+    if(state.campaigns) campaigns = state.campaigns;
+    if(state.participants) participants = state.participants;
+    if(state.wonHistory) wonHistory = state.wonHistory;
+    if(state.questionBank) questionBank = state.questionBank;
+    if(state.actionLog) actionLog = state.actionLog;
+    currentUser = state.currentUser || null;
+    currentRole = state.currentRole || "qualidade";
+    if(state.darkMode) document.body.classList.add('dark');
+    return true;
+  }catch(e){ console.warn("Não foi possível carregar os dados salvos:", e); return false; }
+}
+function clearSavedState(){ try{ localStorage.removeItem(STORAGE_KEY); }catch(e){} }
 
 /* ======================= ELEGIBILIDADE ======================= */
 function isWithinTwoYears(matricula, refDate){
@@ -222,6 +280,7 @@ function goToSection(target){
   if(target==="campanha-atual") renderCampanhaAtual();
   if(target==="historico-colab") renderHistoricoColaborador();
   if(target==="meu-resultado") renderMeuResultado();
+  if(target==="regulamento") renderRegulamentoStats();
 }
 
 document.getElementById('hamburger').addEventListener('click', ()=>{
@@ -230,6 +289,16 @@ document.getElementById('hamburger').addEventListener('click', ()=>{
 });
 document.getElementById('overlay').addEventListener('click', closeSidebarMobile);
 function closeSidebarMobile(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+
+const btnResetDemoData = document.getElementById('btnResetDemoData');
+if(btnResetDemoData){
+  btnResetDemoData.addEventListener('click', ()=>{
+    if(confirm("Isso vai apagar todos os dados salvos neste navegador (campanhas, respostas, banco de perguntas) e voltar ao estado inicial de demonstração. Continuar?")){
+      clearSavedState();
+      window.location.reload();
+    }
+  });
+}
 
 /* Menu lateral recolhível (ícone-somente) */
 const btnCollapseSidebar = document.getElementById('btnCollapseSidebar');
@@ -276,17 +345,27 @@ document.getElementById('loginForm').addEventListener('submit', function(e){
   const senha = document.getElementById('loginSenha').value;
   const errEl = document.getElementById('loginError');
   const user = USERS[mat];
-  if(user && senha === user.senha){
-    currentUser = {matricula: mat, nome:user.nome, role:user.role, setor:user.setor, filial:user.filial, funcao:user.funcao, cargo:user.cargo};
-  } else { errEl.style.display = "block"; return; }
+  if(!(user && senha === user.senha)){ errEl.style.display = "block"; return; }
   errEl.style.display = "none";
-  document.getElementById('loginScreen').style.display = "none";
-  document.getElementById('appRoot').style.display = "flex";
-  applyRole(currentUser.role);
-  showToast(`Bem-vindo(a), ${currentUser.nome}.`, "success");
+  try{
+    currentUser = {matricula: mat, nome:user.nome, role:user.role, setor:user.setor, filial:user.filial, funcao:user.funcao, cargo:user.cargo};
+    document.getElementById('loginScreen').style.display = "none";
+    document.getElementById('appRoot').style.display = "flex";
+    applyRole(currentUser.role);
+    saveState();
+    showToast(`Bem-vindo(a), ${currentUser.nome}.`, "success");
+  }catch(err){
+    console.error("Erro ao entrar:", err);
+    currentUser = null;
+    document.getElementById('appRoot').style.display = "none";
+    document.getElementById('loginScreen').style.display = "flex";
+    errEl.textContent = "Ocorreu um erro inesperado ao entrar. Tente novamente ou use 'Zerar dados' em Configurações.";
+    errEl.style.display = "block";
+  }
 });
 document.getElementById('btnLogout').addEventListener('click', ()=>{
   currentUser = null;
+  saveState();
   document.getElementById('appRoot').style.display = "none";
   document.getElementById('loginScreen').style.display = "flex";
   document.getElementById('loginForm').reset();
@@ -315,7 +394,7 @@ function applyRole(role){
 }
 
 /* ======================= TEMA ======================= */
-function setDarkMode(on){ document.body.classList.toggle('dark', on); document.getElementById('themeToggle').checked = on; }
+function setDarkMode(on){ document.body.classList.toggle('dark', on); document.getElementById('themeToggle').checked = on; saveState(); }
 document.getElementById('themeToggle').addEventListener('change', (e)=> setDarkMode(e.target.checked));
 document.getElementById('themeToggleTop').addEventListener('click', ()=> setDarkMode(!document.body.classList.contains('dark')));
 
@@ -351,8 +430,8 @@ function renderDashboard(){
   document.getElementById('kpiAndamento').textContent = campaigns.filter(c=>c.status==="andamento").length;
   document.getElementById('kpiProgramadas').textContent = campaigns.filter(c=>c.status==="programada").length;
   const latest = campaigns[0];
-  document.getElementById('kpiParticipantes').textContent = campaignParticipants(latest.id).length;
-  document.getElementById('kpiElegiveis').textContent = evaluateEligibility(latest.id).eligible.length;
+  document.getElementById('kpiParticipantes').textContent = latest ? campaignParticipants(latest.id).length : 0;
+  document.getElementById('kpiElegiveis').textContent = latest ? evaluateEligibility(latest.id).eligible.length : 0;
   const ganhadores = campaigns.filter(c=>c.ganhadores).reduce((a,c)=>a+c.ganhadores.length,0);
   document.getElementById('kpiGanhadores').textContent = ganhadores;
 
@@ -367,7 +446,7 @@ function renderDashboard(){
   requestAnimationFrame(()=> document.querySelectorAll('#chartParticipacao .bar-fill').forEach(el=> el.style.height = el.dataset.h + "px"));
 
   const ref = campaigns.find(c=>c.status==="encerrada") || campaigns[0];
-  const refP = campaignParticipants(ref.id);
+  const refP = ref ? campaignParticipants(ref.id) : [];
   const p100 = refP.filter(p=>p.pct===100).length, p90 = refP.filter(p=>p.pct===90).length, p80 = refP.filter(p=>p.pct===80).length;
   const pOther = refP.length - p100 - p90 - p80;
   const total = refP.length || 1;
@@ -413,8 +492,9 @@ window.toggleHbarDetail = function(id){ document.getElementById(id).classList.to
 
 /* Drill-down dos KPIs do dashboard */
 window.goToRodadas = function(){ document.querySelector('[data-target="campanhas"]').click(); };
-window.goToResultadosLatest = function(){ goToParticipants(campaigns[0].id); };
+window.goToResultadosLatest = function(){ if(campaigns[0]) goToParticipants(campaigns[0].id); };
 window.goToElegiveisLatest = function(){
+  if(!campaigns[0]) return;
   document.querySelector('[data-target="elegiveis"]').click();
   document.getElementById('selectCampanhaElegiveis').value = campaigns[0].id;
   renderEligibleTable();
@@ -972,18 +1052,34 @@ function finalizeQuiz(){
   fillCampaignSelects();
   renderDashboard(); renderParticipantsTable(); renderEligibleTable(); renderSorteioSetup();
   renderQuizDoneInto(document.getElementById('responderBody'), campaign, novoParticipante);
+  saveState();
   quizState = null;
 }
 
-/* Bolha do mascote — placeholder até o personagem visual chegar.
-   Troque MASCOT_EMOJI por uma tag <img> quando o mascote estiver pronto.
+/* Univaldo, o mascote oficial da Univale Transportes.
    modo "pro" = versão discreta/profissional, usada no painel da Qualidade. */
-const MASCOT_EMOJI = "🦊";
-const MASCOT_NOME = "Guia do PPG";
+/* Se a imagem do mascote não carregar (ex: pasta "assets" não copiada junto),
+   mostra um emoji no lugar em vez de deixar um ícone de imagem quebrada. */
+window.mascotImgFallback = function(img){
+  img.onerror = null;
+  const span = document.createElement('span');
+  span.textContent = '🦊';
+  span.style.fontSize = img.classList.contains('mascot-figure') ? '52px' : '26px';
+  span.style.lineHeight = '1';
+  img.replaceWith(span);
+};
+
+const MASCOT_IMG = "assets/mascote-feliz.png";
+const MASCOT_BLINK_IMG = "assets/mascote-piscando.png";
+const MASCOT_NOME = "Univaldo";
 function mascotBubble(texto, opts){
   const pro = opts && opts.pro;
+  const img = (opts && opts.img) || MASCOT_IMG;
   return `<div class="mascot-row ${pro ? 'mascot-pro' : ''}">
-    <div class="mascot-avatar">${MASCOT_EMOJI}</div>
+    <div class="mascot-avatar">
+      <img class="m-base" src="${img}" alt="Univaldo" onerror="mascotImgFallback(this)">
+      <img class="m-blink" src="${MASCOT_BLINK_IMG}" alt="" onerror="this.style.display='none'">
+    </div>
     <div class="mascot-speech"><span class="mascot-name">${MASCOT_NOME}</span>${texto}</div>
   </div>`;
 }
@@ -1027,19 +1123,36 @@ function confettiHTML(){
 function renderQuizDoneInto(container, c, participant){
   const correctCount = participant.respostasCorretas ? participant.respostasCorretas.filter(Boolean).length : Math.round(participant.pct/100*c.questoes.length);
   const perfeito = participant.pct === 100;
+  const mascotImg = perfeito ? "assets/mascote-comemorando.png" : "assets/mascote-feliz.png";
   const mascotMsg = perfeito
     ? "Mandou muito bem! 100% de acertos — boa sorte no sorteio! 🍀"
     : "Valeu por participar! Continue de olho nas próximas campanhas. 💪";
   container.innerHTML = `
     <div class="duo-done">
       ${perfeito ? confettiHTML() : ''}
-      <div class="duo-done-icon">${perfeito ? '🎉' : '🙌'}</div>
+      <img src="${mascotImg}" class="mascot-figure" alt="Univaldo" onerror="mascotImgFallback(this)">
       <h2>Obrigado por participar!</h2>
       <p>Sua participação foi registrada com sucesso.</p>
       <div class="duo-score">Você acertou <b>${correctCount} de ${c.questoes.length}</b> perguntas.</div>
       <p class="hint">Boa sorte no sorteio!</p>
     </div>
     ${mascotBubble(mascotMsg)}`;
+}
+
+function renderRegulamentoStats(){
+  const el = document.getElementById('regulamentoStats');
+  if(!el) return;
+  const totalCampanhas = campaigns.length;
+  const totalPremiados = new Set(wonHistory.map(w=>w.matricula)).size;
+  const allParts = participants;
+  const media = allParts.length ? Math.round(allParts.reduce((a,p)=>a+p.pct,0)/allParts.length) : 0;
+  const totalElegiveisHoje = campaigns.reduce((a,c)=> a + evaluateEligibility(c.id).eligible.length, 0);
+  el.innerHTML = `<div class="transp-stats">
+    <div class="transp-stat"><b>${totalCampanhas}</b><span>Campanhas realizadas</span></div>
+    <div class="transp-stat"><b>${totalPremiados}</b><span>Colaboradores já premiados</span></div>
+    <div class="transp-stat"><b>${media}%</b><span>Média geral de acertos</span></div>
+    <div class="transp-stat"><b>${totalElegiveisHoje}</b><span>Elegíveis somando as rodadas</span></div>
+  </div>`;
 }
 
 /* ======================= PÁGINAS DO COLABORADOR ======================= */
@@ -1242,7 +1355,30 @@ function downloadCSV(filename, headers, rows){
   a.href = url; a.download = filename; document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(url);
 }
-function openPrintReport(title, headers, rows, footNote){
+function buildBarChartSVG(labels, values, opts){
+  opts = opts || {};
+  const w = 580, h = 240, padTop = 30, padBottom = 50, padSide = 20;
+  const innerH = h - padTop - padBottom;
+  const max = Math.max(...values, 1);
+  const n = values.length || 1;
+  const gap = 14;
+  const barW = Math.max(16, (w - padSide*2 - gap*(n-1)) / n);
+  let bars = "";
+  values.forEach((v,i)=>{
+    const barH = Math.round((v/max) * innerH);
+    const x = padSide + i*(barW+gap);
+    const y = h - padBottom - barH;
+    const label = String(labels[i]||'').length > 15 ? String(labels[i]).slice(0,14)+'…' : String(labels[i]||'');
+    bars += `<rect x="${x.toFixed(1)}" y="${y}" width="${barW.toFixed(1)}" height="${barH}" fill="#02A39D" rx="5"/>`;
+    bars += `<text x="${(x+barW/2).toFixed(1)}" y="${y-6}" font-size="11" text-anchor="middle" fill="#00695C" font-family="Arial">${v}${opts.suffix||''}</text>`;
+    bars += `<text x="${(x+barW/2).toFixed(1)}" y="${h-padBottom+16}" font-size="9.5" text-anchor="middle" fill="#5B7370" font-family="Arial">${label}</text>`;
+  });
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;">
+    <line x1="${padSide}" y1="${h-padBottom}" x2="${w-padSide}" y2="${h-padBottom}" stroke="#E3ECEA"/>
+    ${bars}
+  </svg>`;
+}
+function openPrintReport(title, headers, rows, footNote, chartSvg){
   const win = window.open('', '_blank');
   if(!win){ showToast("O navegador bloqueou a abertura da janela de impressão.","warning"); return; }
   win.document.write(`
@@ -1254,9 +1390,11 @@ function openPrintReport(title, headers, rows, footNote){
       table{width:100%; border-collapse:collapse; margin-top:18px;}
       th,td{border:1px solid #E3ECEA; padding:8px 10px; font-size:12px; text-align:left;}
       th{background:#F7F9FB; color:#5B7370; text-transform:uppercase; font-size:10px;}
+      .chart-wrap{margin-top:16px; text-align:center;}
     </style></head><body>
     <h1>PPG · Programa Política de Gestão</h1>
     <p class="meta">${title} — gerado em ${fmtDateTime(new Date())}</p>
+    ${chartSvg ? `<div class="chart-wrap">${chartSvg}</div>` : ''}
     <table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
     <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>
     ${footNote ? `<p class="meta" style="margin-top:16px;">${footNote}</p>` : ''}
@@ -1283,7 +1421,10 @@ function buildReportData(reportType, campaignId){
   if(reportType === 'distribuicao'){
     const allWinners = campaigns.filter(x=>x.ganhadores).flatMap(x=>x.ganhadores);
     const rows = allWinners.map(w=>[w.nome,w.setor,w.filial,w.funcao]);
-    return {title:`Distribuição de ganhadores por setor/filial/função — todas as campanhas`, headers:["Nome","Setor","Filial","Função"], rows};
+    const counts = {};
+    allWinners.forEach(w=> counts[w.setor] = (counts[w.setor]||0)+1);
+    const chartSvg = Object.keys(counts).length ? buildBarChartSVG(Object.keys(counts), Object.values(counts)) : null;
+    return {title:`Distribuição de ganhadores por setor/filial/função — todas as campanhas`, headers:["Nome","Setor","Filial","Função"], rows, chartSvg};
   }
   if(reportType === 'auditoria'){
     const rows = [[c.nome, c.criterios||"—", c.randomSeed||"—", c.responsavel||"—", c.justificativa||"—"]];
@@ -1292,6 +1433,29 @@ function buildReportData(reportType, campaignId){
   if(reportType === 'historico'){
     const rows = campaigns.filter(x=>x.ganhadores || x.status==='encerrada').map(x=>[x.nome, x.inicio.replace('T',' '), x.fim.replace('T',' '), campaignParticipants(x.id).length, x.ganhadores?x.ganhadores.length:0]);
     return {title:"Histórico completo de campanhas", headers:["Campanha","Início","Encerramento","Participantes","Ganhadores"], rows};
+  }
+  if(reportType === 'comparativo'){
+    const rows = campaigns.map(x=>{
+      const parts = campaignParticipants(x.id);
+      const media = parts.length ? Math.round(parts.reduce((a,p)=>a+p.pct,0)/parts.length) : 0;
+      const {eligible} = evaluateEligibility(x.id);
+      return [x.nome, parts.length, eligible.length, media+"%", x.ganhadores?x.ganhadores.length:0, x.status];
+    });
+    const chartSvg = buildBarChartSVG(campaigns.map(x=>x.nome.split('–')[0].trim()), campaigns.map(x=>campaignParticipants(x.id).length), {suffix:' resp.'});
+    return {title:"Comparativo entre campanhas", headers:["Campanha","Participantes","Elegíveis","Média de acertos","Ganhadores","Status"], rows, chartSvg};
+  }
+  if(reportType === 'evolucao'){
+    const ordered = [...campaigns].sort((a,b)=> new Date(a.inicio) - new Date(b.inicio));
+    const rows = ordered.map(x=>{
+      const parts = campaignParticipants(x.id);
+      const media = parts.length ? Math.round(parts.reduce((a,p)=>a+p.pct,0)/parts.length) : 0;
+      return [x.inicio.replace('T',' '), x.nome, parts.length, media+"%"];
+    });
+    const chartSvg = buildBarChartSVG(ordered.map(x=>x.nome.split('–')[0].trim()), ordered.map(x=>{
+      const parts = campaignParticipants(x.id);
+      return parts.length ? Math.round(parts.reduce((a,p)=>a+p.pct,0)/parts.length) : 0;
+    }), {suffix:'%'});
+    return {title:"Evolução histórica — média de acertos por campanha ao longo do tempo", headers:["Início","Campanha","Participantes","Média de acertos"], rows, chartSvg};
   }
 }
 document.querySelectorAll('.report-btn').forEach(btn=>{
@@ -1303,7 +1467,7 @@ document.querySelectorAll('.report-btn').forEach(btn=>{
       downloadCSV(data.title.replace(/[^\w]+/g,'_') + ".csv", data.headers, data.rows);
       showToast("Arquivo .csv baixado (compatível com Excel).","success");
     } else {
-      openPrintReport(data.title, data.headers, data.rows);
+      openPrintReport(data.title, data.headers, data.rows, null, data.chartSvg);
       showToast("Abrindo visualização para impressão/PDF.","success");
     }
     logAction("Relatório exportado", `${btn.dataset.report} (${btn.dataset.type})`);
@@ -1323,6 +1487,7 @@ function renderTimeline(){
 }
 
 /* ======================= INIT ======================= */
+const _hadSavedState = loadState();
 fillCampaignSelects();
 renderDashboard();
 renderCampaignGrid();
@@ -1332,3 +1497,22 @@ renderSorteioSetup();
 renderTimeline();
 renderBanco();
 if(window.lucide) lucide.createIcons();
+
+try{
+  if(_hadSavedState && currentUser && USERS[currentUser.matricula]){
+    document.getElementById('loginScreen').style.display = "none";
+    document.getElementById('appRoot').style.display = "flex";
+    applyRole(currentUser.role);
+    showToast(`Sessão restaurada — bem-vindo(a) de volta, ${currentUser.nome}.`, "");
+  } else if(_hadSavedState){
+    if(currentUser){ currentUser = null; saveState(); } // sessão salva não corresponde a nenhum usuário válido — exige novo login
+    showToast("Dados salvos anteriormente neste navegador foram restaurados.", "");
+  } else {
+    saveState(); // primeira vez neste navegador: grava os dados de demonstração como ponto de partida
+  }
+}catch(e){
+  console.warn("Não foi possível restaurar a sessão salva — voltando para a tela de login.", e);
+  clearSavedState();
+  document.getElementById('appRoot').style.display = "none";
+  document.getElementById('loginScreen').style.display = "flex";
+}

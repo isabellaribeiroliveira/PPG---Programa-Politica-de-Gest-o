@@ -11,8 +11,7 @@
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
     <div class="login-mascot-row">
-      <!-- 🦊 Espaço reservado para o mascote — troque o emoji abaixo por <img src="mascote.png"> quando o personagem estiver pronto -->
-      <div class="login-mascot">🦊</div>
+      <img src="assets/mascote-aceno.png" alt="Univaldo, mascote da Univale" class="mascot-figure" onerror="if(window.mascotImgFallback) mascotImgFallback(this); else this.style.display='none';">
     </div>
     <div class="login-mark">PPG</div>
     <h2>Programa Política de Gestão</h2>
@@ -256,6 +255,8 @@
             <div class="panel" style="margin:0; box-shadow:none; border:1px solid var(--border);"><h3 style="font-size:13.5px;">Distribuição por setor/filial</h3><p class="hint" style="margin-bottom:12px;">Verificação de equidade nas premiações</p><div style="display:flex; gap:8px;"><button class="btn btn-outline btn-sm report-btn" data-report="distribuicao" data-type="Excel">.xlsx</button><button class="btn btn-outline btn-sm report-btn" data-report="distribuicao" data-type="PDF">.pdf</button></div></div>
             <div class="panel" style="margin:0; box-shadow:none; border:1px solid var(--border);"><h3 style="font-size:13.5px;">Registro de auditoria do sorteio</h3><p class="hint" style="margin-bottom:12px;">Critérios aplicados, número aleatório e responsável</p><div style="display:flex; gap:8px;"><button class="btn btn-outline btn-sm report-btn" data-report="auditoria" data-type="Excel">.xlsx</button><button class="btn btn-outline btn-sm report-btn" data-report="auditoria" data-type="PDF">.pdf</button></div></div>
             <div class="panel" style="margin:0; box-shadow:none; border:1px solid var(--border);"><h3 style="font-size:13.5px;">Histórico completo</h3><p class="hint" style="margin-bottom:12px;">Todas as campanhas já realizadas</p><div style="display:flex; gap:8px;"><button class="btn btn-outline btn-sm report-btn" data-report="historico" data-type="Excel">.xlsx</button><button class="btn btn-outline btn-sm report-btn" data-report="historico" data-type="PDF">.pdf</button></div></div>
+            <div class="panel" style="margin:0; box-shadow:none; border:1px solid var(--border);"><h3 style="font-size:13.5px;">Comparativo entre campanhas</h3><p class="hint" style="margin-bottom:12px;">Participantes, elegíveis e média lado a lado — .pdf inclui gráfico</p><div style="display:flex; gap:8px;"><button class="btn btn-outline btn-sm report-btn" data-report="comparativo" data-type="Excel">.xlsx</button><button class="btn btn-outline btn-sm report-btn" data-report="comparativo" data-type="PDF">.pdf</button></div></div>
+            <div class="panel" style="margin:0; box-shadow:none; border:1px solid var(--border);"><h3 style="font-size:13.5px;">Evolução histórica</h3><p class="hint" style="margin-bottom:12px;">Tendência de participação e acertos ao longo do tempo — .pdf inclui gráfico</p><div style="display:flex; gap:8px;"><button class="btn btn-outline btn-sm report-btn" data-report="evolucao" data-type="Excel">.xlsx</button><button class="btn btn-outline btn-sm report-btn" data-report="evolucao" data-type="PDF">.pdf</button></div></div>
           </div>
         </div>
       </section>
@@ -345,29 +346,65 @@
 
       <!-- ================= REGULAMENTO (Colaborador) ================= -->
       <section class="section colaborador-only" id="sec-regulamento">
-        <div class="section-head"><div><h2>Regulamento do PPG</h2><p>Entenda como funciona o Programa Política de Gestão.</p></div></div>
+        <div class="section-head"><div><h2>Regras e Transparência</h2><p>Entenda exatamente como o PPG funciona, do início ao sorteio.</p></div></div>
         <div class="mascot-row">
-          <div class="mascot-avatar">🦊</div>
-          <div class="mascot-speech"><span class="mascot-name">Guia do PPG</span>Bora entender as regras? É rapidinho, prometo! 😉</div>
+          <div class="mascot-avatar">
+            <img class="m-base" src="assets/mascote-feliz.png" alt="Univaldo" onerror="if(window.mascotImgFallback) mascotImgFallback(this); else this.style.display='none';">
+            <img class="m-blink" src="assets/mascote-piscando.png" alt="" onerror="this.style.display='none'">
+          </div>
+          <div class="mascot-speech"><span class="mascot-name">Univaldo</span>Bora entender as regras? É rapidinho, prometo! 😉</div>
         </div>
+
+        <div id="regulamentoStats"></div>
+
         <div class="panel">
           <div class="reg-block">
-            <h4>Como participar</h4>
-            <p>Durante o período de cada campanha, acesse "Campanha Atual" e responda ao questionário. Cada colaborador pode enviar apenas uma resposta por campanha, vinculada à sua matrícula.</p>
+            <h4>1. Como participar</h4>
+            <p>Durante o período de cada campanha, acesse "Campanha Atual" e responda ao questionário — uma pergunta por vez, no seu ritmo. Cada colaborador pode enviar <b>apenas uma resposta por campanha</b>, vinculada à sua matrícula. Depois de enviada, a resposta não pode ser alterada.</p>
           </div>
           <div class="reg-block">
-            <h4>Como funciona a premiação</h4>
+            <h4>2. Como a elegibilidade ao sorteio é calculada</h4>
+            <p>Depois que a campanha encerra, o sistema aplica três filtros automáticos, nesta ordem:</p>
             <ul>
-              <li>Somente colaboradores que acertarem 100% das questões concorrem ao sorteio.</li>
-              <li>Colaboradores nas funções de Coordenador, Encarregado de Setor ou Gerência não participam do sorteio.</li>
-              <li>Quem já foi sorteado em alguma campanha do PPG nos últimos 2 anos não concorre novamente nesse período.</li>
-              <li>O sistema busca uma distribuição justa dos ganhadores entre setores e filiais.</li>
+              <li><b>100% de acertos.</b> Só quem acerta todas as perguntas entra na lista de elegíveis. Não há "quase" — é tudo ou nada.</li>
+              <li><b>Função permitida.</b> Colaboradores em funções de Coordenação, Gerência, Encarregado ou Assessoria não concorrem — o objetivo do PPG é incentivar o conhecimento em todos os níveis operacionais e administrativos, não recompensar quem já ocupa posição de liderança.</li>
+              <li><b>Sem prêmio recente.</b> Quem já foi sorteado em qualquer campanha do PPG nos últimos <b>2 anos</b> não concorre novamente nesse período — assim mais gente tem chance de ser premiada ao longo do tempo.</li>
+            </ul>
+            <p class="hint">Exemplo: se você acertou 100%, não é Coordenador/Gerente e não ganhou nos últimos 2 anos, você está automaticamente na lista de elegíveis — não precisa se inscrever em nada.</p>
+          </div>
+          <div class="reg-block">
+            <h4>3. Como o sorteio garante imparcialidade</h4>
+            <ul>
+              <li>O sorteio é feito por <b>geração aleatória de números</b> dentro do próprio sistema — o mesmo número fica registrado para conferência.</li>
+              <li>O sistema tenta uma <b>distribuição justa</b>: sempre que possível, evita concentrar todos os ganhadores no mesmo setor ou na mesma filial.</li>
+              <li>Quando essa distribuição não é totalmente possível (por exemplo, poucos setores diferentes entre os elegíveis daquela rodada), o sistema registra a justificativa no histórico, para fins de auditoria.</li>
+              <li>A equipe da Qualidade pode validar ou, em caso de alguma restrição não identificada automaticamente, substituir um ganhador — essa ação também fica registrada.</li>
             </ul>
           </div>
           <div class="reg-block">
-            <h4>Transparência</h4>
-            <p>O sorteio é feito de forma aleatória e auditável, com um número de sorteio registrado para conferência pela equipe da Qualidade. O gabarito das perguntas é de acesso exclusivo da equipe da Qualidade.</p>
+            <h4>4. O que é mantido em sigilo</h4>
+            <p>O <b>gabarito</b> (as respostas corretas de cada pergunta) é de acesso exclusivo da equipe da Qualidade — nem antes, nem depois da campanha ele é divulgado. Ao final do questionário você vê apenas sua pontuação final, sem indicação de quais perguntas específicas acertou ou errou.</p>
           </div>
+        </div>
+
+        <div class="panel">
+          <h4 style="font-size:14px; color:var(--secondary); margin-bottom:12px;">Perguntas frequentes</h4>
+          <details class="faq-item">
+            <summary>Posso responder mais de uma vez se errar?</summary>
+            <p>Não. Cada matrícula tem direito a uma única resposta por campanha, mesmo que você não acerte 100%.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Se eu empatar em 100% com outras pessoas, todo mundo concorre?</summary>
+            <p>Sim — todos que acertarem 100% (e passarem pelos outros dois filtros) entram na mesma lista de elegíveis, com a mesma chance no sorteio aleatório.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Meu gestor pode ver minhas respostas erradas?</summary>
+            <p>Não. Apenas a sua pontuação final é registrada. O detalhamento pergunta a pergunta não fica visível nem para gestores, apenas o percentual final.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Como sei se fui sorteado(a)?</summary>
+            <p>Os ganhadores são divulgados oficialmente pela equipe da Qualidade após o sorteio. Você também pode acompanhar em "Histórico" se participou e qual foi seu resultado.</p>
+          </details>
         </div>
       </section>
 
@@ -376,6 +413,15 @@
         <div class="section-head"><div><h2>Configurações</h2><p id="configSubtitle">Preferências pessoais e parâmetros do sistema.</p></div></div>
         <div class="panel"><h3>Aparência</h3><div class="hint">Disponível para todos os perfis</div>
           <div style="display:flex; align-items:center; gap:12px;"><label class="switch"><input type="checkbox" id="themeToggle"><span class="switch-track"></span></label><span style="font-size:13px;">Tema escuro</span></div>
+        </div>
+        <div class="panel">
+          <h3>Dados e armazenamento</h3>
+          <div class="hint">Este protótipo salva os dados automaticamente neste navegador — não é compartilhado entre computadores ou pessoas diferentes</div>
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+            <span style="width:9px;height:9px;border-radius:50%; background:var(--success); display:inline-block;"></span>
+            <span style="font-size:13px; color:var(--ink-soft);">Salvamento automático ativo — os dados continuam aqui mesmo recarregando a página</span>
+          </div>
+          <button class="btn btn-outline btn-sm" id="btnResetDemoData">🗑️ Zerar e recomeçar com os dados de demonstração</button>
         </div>
         <div class="two-col qualidade-only">
           <div class="panel"><h3>Regras de elegibilidade</h3><div class="hint">Gerenciadas pela equipe da Qualidade</div>
@@ -387,9 +433,9 @@
           </div>
           <div class="panel"><h3>Segurança e integrações</h3><div class="hint">Parâmetros técnicos do sistema</div>
             <div class="form-grid">
-              <div class="field full"><label>Autenticação</label><input type="text" value="Matrícula + senha, com criptografia de dados sensíveis" disabled></div>
+              <div class="field full"><label>Autenticação</label><input type="text" value="Matrícula + senha, com criptografia de dados sensíveis (produção)" disabled></div>
+              <div class="field full"><label>Armazenamento neste protótipo</label><input type="text" value="LocalStorage do navegador — sem servidor/banco de dados externo" disabled></div>
               <div class="field full"><label>Integração futura com RH</label><input type="text" value="Atualização automática de matrícula, filial, setor e função" disabled></div>
-              <div class="field full"><label>Backup automático</label><select><option>Diário</option><option>Semanal</option></select></div>
               <div class="field full"><label>Duplicidade de respostas</label><select><option>Bloquear — 1 resposta por matrícula</option></select></div>
             </div>
           </div>
