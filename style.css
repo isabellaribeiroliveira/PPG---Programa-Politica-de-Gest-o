@@ -5,10 +5,25 @@
     --success:#2E7D32; --warning:#F9A825; --error:#C62828;
     --bg:#F7F9FB; --card:#FFFFFF; --ink:#0F2A28; --ink-soft:#5B7370; --border:#E3ECEA;
     --shadow: 0 2px 10px rgba(2,163,157,0.07), 0 1px 2px rgba(15,42,40,0.04);
+    /* ---- liquid glass tokens ---- */
+    --glass-bg: rgba(255,255,255,0.62);
+    --glass-bg-strong: rgba(255,255,255,0.78);
+    --glass-border: rgba(255,255,255,0.55);
+    --glass-blur: blur(20px) saturate(170%);
+    --glass-shadow: 0 8px 32px rgba(2,105,92,0.12), 0 1px 1px rgba(255,255,255,0.4) inset;
+    --grad-brand: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    --grad-warm: linear-gradient(135deg, var(--warning) 0%, #F06543 100%);
+    --grad-ok: linear-gradient(135deg, #34C759 0%, var(--success) 100%);
+    --grad-err: linear-gradient(135deg, #FF6B6B 0%, var(--error) 100%);
+    --grad-cool: linear-gradient(135deg, #00B4D8 0%, var(--secondary) 100%);
   }
   body.dark{
     --bg:#0D1917; --card:#132524; --ink:#E7F5F3; --ink-soft:#89B4AF; --border:#20403C;
     --shadow: 0 2px 10px rgba(0,0,0,0.35);
+    --glass-bg: rgba(19,37,36,0.58);
+    --glass-bg-strong: rgba(19,37,36,0.75);
+    --glass-border: rgba(255,255,255,0.09);
+    --glass-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 1px 1px rgba(255,255,255,0.04) inset;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -548,3 +563,177 @@
   .transp-stat b{display:block; font-family:'Manrope'; font-size:20px; color:var(--secondary);}
   .transp-stat span{font-size:10.5px; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:.02em;}
   @media(max-width:640px){ .transp-stats{grid-template-columns:repeat(2,1fr);} }
+
+  /* =====================================================================
+     v6.0 — LIQUID GLASS + PALETA VIVA
+     Vidro translúcido com blur, cantos bem arredondados, gradientes da
+     própria paleta em vez de cor chapada, e microanimações mais fluidas.
+     Não substitui o visual anterior — reveste por cima dele.
+     ===================================================================== */
+
+  /* ---------- Fundo ambiente: manchas de cor desfocadas (o "liquid" do glass) ---------- */
+  body{ background-color:var(--bg); position:relative; }
+  body::before{
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(38vw 38vw at 8% 12%, rgba(2,163,157,0.24), transparent 60%),
+      radial-gradient(34vw 34vw at 92% 18%, rgba(249,168,37,0.16), transparent 60%),
+      radial-gradient(42vw 42vw at 25% 92%, rgba(0,105,92,0.18), transparent 60%),
+      radial-gradient(30vw 30vw at 85% 85%, rgba(46,125,50,0.12), transparent 60%);
+    filter:blur(10px); animation:ambientDrift 26s ease-in-out infinite alternate;
+  }
+  body.dark::before{
+    background:
+      radial-gradient(38vw 38vw at 8% 12%, rgba(2,163,157,0.30), transparent 60%),
+      radial-gradient(34vw 34vw at 92% 18%, rgba(249,168,37,0.14), transparent 60%),
+      radial-gradient(42vw 42vw at 25% 92%, rgba(0,105,92,0.28), transparent 60%),
+      radial-gradient(30vw 30vw at 85% 85%, rgba(46,125,50,0.16), transparent 60%);
+  }
+  @keyframes ambientDrift{
+    0%{ transform:translate(0,0) scale(1); }
+    100%{ transform:translate(-2%,2%) scale(1.06); }
+  }
+  .app, .login-screen{ position:relative; z-index:1; }
+
+  /* ---------- Superfícies em vidro ---------- */
+  .panel, .kpi, .login-card, .share-card, .mascot-speech, .streak-chip,
+  .transp-stat, .table-wrap, .lock-banner{
+    background:var(--glass-bg) !important;
+    backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-border) !important;
+    box-shadow:var(--glass-shadow) !important;
+    border-radius:22px !important;
+  }
+  .kpi{ border-radius:20px !important; border-left:none !important; position:relative; overflow:hidden; }
+  .kpi::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:5px; background:var(--grad-brand); border-radius:22px 0 0 22px; }
+  .kpi.alt1::before{ background:var(--grad-cool); } .kpi.alt2::before{ background:var(--grad-ok); }
+  .kpi.alt3::before{ background:var(--grad-warm); } .kpi.alt4::before{ background:var(--grad-err); }
+  .table-wrap{ padding:4px; border-radius:18px !important; }
+  .streak-chip{ border-bottom:none !important; }
+  .transp-stats{ gap:14px; }
+
+  /* Painéis de destaque com leve gradiente colorido por cima do vidro */
+  .panel:hover, .kpi:hover{ box-shadow:0 14px 36px rgba(2,105,92,0.16), 0 1px 1px rgba(255,255,255,0.45) inset !important; }
+  .panel, .kpi{ transition:transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s cubic-bezier(.16,1,.3,1) !important; }
+  .kpi:hover{ transform:translateY(-3px); }
+
+  /* ---------- Sidebar: vidro escuro sobre a paleta ---------- */
+  .sidebar{
+    background:linear-gradient(180deg, rgba(0,105,92,0.88) 0%, rgba(2,37,31,0.92) 100%) !important;
+    backdrop-filter:blur(24px) saturate(160%); -webkit-backdrop-filter:blur(24px) saturate(160%);
+    border-right:1px solid rgba(255,255,255,0.08);
+    border-radius:0 26px 26px 0;
+  }
+  .brand-mark{ background:var(--grad-brand) !important; box-shadow:0 4px 14px rgba(2,163,157,0.5); }
+  .menu-item.active{
+    background:var(--grad-brand) !important; box-shadow:0 6px 18px rgba(2,163,157,0.45) !important;
+    border-radius:14px !important;
+  }
+  .menu-item{ border-radius:14px !important; transition:background .2s cubic-bezier(.16,1,.3,1), transform .2s cubic-bezier(.16,1,.3,1), color .15s !important; }
+  .menu-item:hover{ transform:translateX(3px); }
+  .menu-group-header{ border-radius:14px !important; }
+
+  /* ---------- Topbar flutuante em vidro ---------- */
+  .topbar{
+    background:var(--glass-bg-strong) !important;
+    backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+    border-bottom:1px solid var(--glass-border) !important;
+    border-radius:0 0 22px 22px;
+  }
+  .avatar{ background:var(--grad-brand) !important; box-shadow:0 4px 12px rgba(2,163,157,0.4); }
+  .icon-btn{ border-radius:12px !important; transition:all .2s cubic-bezier(.16,1,.3,1); }
+  .icon-btn:hover{ transform:translateY(-1px) scale(1.05); box-shadow:0 4px 12px rgba(2,163,157,0.25); }
+
+  /* ---------- Botões: gradiente + brilho + cantos mais macios ---------- */
+  .btn{ border-radius:16px !important; transition:transform .15s cubic-bezier(.16,1,.3,1), box-shadow .2s cubic-bezier(.16,1,.3,1), filter .15s !important; position:relative; overflow:hidden; }
+  .btn-primary, .btn-duo{
+    background:var(--grad-brand) !important; border-bottom:4px solid var(--primary-dark) !important;
+    box-shadow:0 6px 18px rgba(2,163,157,0.35) !important;
+  }
+  .btn-primary:hover, .btn-duo:hover{ box-shadow:0 10px 26px rgba(2,163,157,0.5) !important; filter:brightness(1.03); }
+  .btn-primary::after, .btn-duo::after{
+    content:""; position:absolute; inset:0; background:linear-gradient(120deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%);
+    transform:translateX(-120%); transition:transform .6s ease;
+  }
+  .btn-primary:hover::after, .btn-duo:hover::after{ transform:translateX(120%); }
+  .btn-outline{ background:var(--glass-bg) !important; backdrop-filter:blur(10px); border-radius:16px !important; }
+  .btn-outline:hover{ box-shadow:0 6px 16px rgba(2,163,157,0.18); transform:translateY(-1px); }
+  .btn-ghost{ background:linear-gradient(135deg, rgba(2,163,157,0.14), rgba(0,105,92,0.14)) !important; border-radius:16px !important; }
+
+  /* ---------- Campos de formulário em vidro ---------- */
+  .field input, .field select, .field textarea, .share-link-box input{
+    background:var(--glass-bg) !important; backdrop-filter:blur(8px);
+    border-radius:14px !important; border:1.5px solid var(--glass-border) !important;
+    transition:box-shadow .2s cubic-bezier(.16,1,.3,1), border-color .2s !important;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{
+    box-shadow:0 0 0 4px rgba(2,163,157,0.16) !important; border-color:var(--primary) !important;
+  }
+
+  /* ---------- Badges e chips: gradiente suave em vez de chapado ---------- */
+  .badge{ border-radius:100px !important; }
+  .badge.andamento{ background:linear-gradient(135deg, rgba(0,180,216,.22), rgba(0,105,92,.22)); }
+  .badge.finalizada{ background:linear-gradient(135deg, rgba(52,199,89,.22), rgba(46,125,50,.22)); }
+  .badge.encerrada{ background:linear-gradient(135deg, rgba(249,168,37,.28), rgba(240,101,67,.2)); }
+  .badge.excluido{ background:linear-gradient(135deg, rgba(255,107,107,.24), rgba(198,40,40,.2)); }
+  .chip.c-setor, .chip.c-filial{ backdrop-filter:blur(6px); }
+
+  /* ---------- Cards do quiz (colaborador) em vidro colorido ---------- */
+  .duo-card{
+    background:var(--glass-bg-strong) !important; backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-border); border-radius:26px !important; box-shadow:var(--glass-shadow);
+  }
+  .duo-option{
+    background:var(--glass-bg) !important; backdrop-filter:blur(8px);
+    border-radius:18px !important; transition:transform .15s cubic-bezier(.16,1,.3,1), border-color .15s, background .15s !important;
+  }
+  .duo-option:hover{ transform:translateX(3px) scale(1.01); }
+  .duo-option.selected{ background:linear-gradient(135deg, rgba(2,163,157,.18), rgba(0,105,92,.14)) !important; }
+  .duo-progress{ border-radius:100px !important; overflow:hidden; background:rgba(2,163,157,0.12) !important; }
+  .duo-progress-fill{ background:var(--grad-brand) !important; box-shadow:0 0 10px rgba(2,163,157,0.5); }
+
+  /* ---------- Mascote: bolha com leve gradiente colorido ---------- */
+  .mascot-avatar{ box-shadow:0 8px 20px rgba(2,163,157,0.4) !important; }
+  .mascot-speech{ border:1px solid var(--glass-border) !important; }
+
+  /* ---------- Barras/gráficos com gradiente e brilho ---------- */
+  .bar-fill{ background:var(--grad-brand) !important; border-radius:8px 8px 0 0 !important; box-shadow:0 0 12px rgba(2,163,157,0.35); }
+  .hbar-fill{ box-shadow:0 0 8px rgba(2,163,157,0.35); }
+  .hbar-track{ background:rgba(2,163,157,0.1) !important; }
+
+  /* ---------- Modais (compartilhar / detalhe) em vidro mais forte ---------- */
+  .share-backdrop{ backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+  .share-card{ border-radius:26px !important; animation:glassPopIn .35s cubic-bezier(.16,1,.3,1); }
+  @keyframes glassPopIn{ from{ opacity:0; transform:translateY(14px) scale(.97); } to{ opacity:1; transform:translateY(0) scale(1); } }
+
+  /* ---------- Entrada suave e escalonada dos cards/grids ---------- */
+  .kpi-grid .kpi, .streak-strip .streak-chip{ animation:cardRise .5s cubic-bezier(.16,1,.3,1) both; }
+  .kpi-grid .kpi:nth-child(1){ animation-delay:.02s; } .kpi-grid .kpi:nth-child(2){ animation-delay:.08s; }
+  .kpi-grid .kpi:nth-child(3){ animation-delay:.14s; } .kpi-grid .kpi:nth-child(4){ animation-delay:.2s; }
+  .streak-strip .streak-chip:nth-child(1){ animation-delay:.02s; } .streak-strip .streak-chip:nth-child(2){ animation-delay:.08s; }
+  .streak-strip .streak-chip:nth-child(3){ animation-delay:.14s; }
+  @keyframes cardRise{ from{ opacity:0; transform:translateY(14px) scale(.98); } to{ opacity:1; transform:translateY(0) scale(1); } }
+  .section.active{ animation:fadein .4s cubic-bezier(.16,1,.3,1); }
+
+  /* ---------- Pulso suave no botão de ação principal do quiz ---------- */
+  .duo-nav .btn-primary:not(:disabled){ animation:ctaPulse 2.4s ease-in-out infinite; }
+  @keyframes ctaPulse{
+    0%,100%{ box-shadow:0 6px 18px rgba(2,163,157,0.35); }
+    50%{ box-shadow:0 6px 26px rgba(2,163,157,0.6); }
+  }
+  .duo-nav .btn-primary:disabled{ animation:none; }
+
+  /* ---------- Scrollbar discreta e combinando com a paleta ---------- */
+  ::-webkit-scrollbar{ width:10px; height:10px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  ::-webkit-scrollbar-thumb{ background:rgba(2,163,157,0.35); border-radius:100px; border:2px solid transparent; background-clip:padding-box; }
+  ::-webkit-scrollbar-thumb:hover{ background:rgba(2,163,157,0.55); background-clip:padding-box; }
+
+  /* ---------- Toggle de tema mais "glass" ---------- */
+  .switch-track{ border-radius:100px !important; backdrop-filter:blur(6px); }
+  .switch input:checked + .switch-track{ background:var(--grad-brand) !important; box-shadow:0 0 10px rgba(2,163,157,0.4); }
+
+  @media(max-width:640px){
+    .sidebar{ border-radius:0; }
+    .topbar{ border-radius:0; }
+  }

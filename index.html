@@ -11,7 +11,7 @@
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
     <div class="login-mascot-row">
-      <img src="assets/mascote-aceno.png" alt="Univaldo, mascote da Univale" class="mascot-figure" onerror="if(window.mascotImgFallback) mascotImgFallback(this); else this.style.display='none';">
+      <img id="loginMascotImg" alt="Univaldo, mascote da Univale" class="mascot-figure" onerror="if(window.mascotImgFallback) mascotImgFallback(this); else this.style.display='none';">
     </div>
     <div class="login-mark">PPG</div>
     <h2>Programa Política de Gestão</h2>
@@ -66,11 +66,13 @@
           <button class="menu-item sub" data-target="participantes"><i data-lucide="bar-chart-2"></i><span class="label">Resultados</span></button>
           <button class="menu-item sub" data-target="historico"><i data-lucide="history"></i><span class="label">Histórico</span></button>
           <button class="menu-item sub" data-target="banco"><i data-lucide="database"></i><span class="label">Banco de Perguntas</span></button>
+          <button class="menu-item sub" data-target="regras-excecoes"><i data-lucide="scale"></i><span class="label">Regras & Exceções</span></button>
         </div>
       </div>
 
       <button class="menu-item qualidade-only" data-target="elegiveis"><i data-lucide="user-check"></i><span class="label">Elegíveis</span></button>
       <button class="menu-item qualidade-only" data-target="sorteio"><i data-lucide="dices"></i><span class="label">Sorteio</span></button>
+      <button class="menu-item qualidade-only" data-target="divulgacao"><i data-lucide="megaphone"></i><span class="label">Divulgação</span></button>
       <button class="menu-item qualidade-only" data-target="auditoria"><i data-lucide="shield-check"></i><span class="label">Auditoria</span></button>
       <button class="menu-item qualidade-only" data-target="relatorios"><i data-lucide="file-text"></i><span class="label">Relatórios</span></button>
 
@@ -313,10 +315,111 @@
         </form>
       </section>
 
+      <!-- ================= REGRAS & EXCEÇÕES (Qualidade) ================= -->
+      <section class="section qualidade-only" id="sec-regras-excecoes">
+        <div class="section-head"><div><h2>Regras & Exceções</h2><p>Toda alteração ou exceção às regras padrão de elegibilidade fica registrada aqui, com justificativa e responsável.</p></div></div>
+
+        <div class="panel">
+          <div class="bq-alert"><i data-lucide="alert-triangle" style="width:15px;height:15px;"></i> As 3 regras de elegibilidade (100% de acertos, cargo não impedido, não ter ganhado nos últimos 2 anos) são aplicadas automaticamente. Use esta página apenas quando uma exceção pontual e justificada precisar ser registrada.</div>
+        </div>
+
+        <form class="panel" id="formExcecao">
+          <h3>Registrar alteração ou exceção</h3>
+          <div class="form-grid">
+            <div class="field"><label>Campanha afetada</label><select id="excCampanha" required></select></div>
+            <div class="field"><label>Regra original</label><input type="text" id="excRegraOriginal" placeholder="Ex: Não ter sido premiado nos últimos 2 anos" required></div>
+            <div class="field full"><label>Alteração / exceção aplicada</label><input type="text" id="excAlteracao" placeholder="Ex: Colaborador X liberado por decisão da diretoria em 10/06/2026" required></div>
+            <div class="field full"><label>Justificativa</label><input type="text" id="excJustificativa" placeholder="Explique o motivo da exceção" required></div>
+          </div>
+          <div style="display:flex; gap:10px; margin-top:14px;">
+            <button type="submit" class="btn btn-primary">Registrar exceção</button>
+          </div>
+        </form>
+
+        <div class="panel">
+          <h3>Histórico de alterações e exceções</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Data/hora</th><th>Responsável</th><th>Campanha</th><th>Regra original</th><th>Alteração aplicada</th><th>Justificativa</th></tr></thead>
+              <tbody id="tblExcecoes"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= DIVULGAÇÃO (Qualidade) ================= -->
+      <section class="section qualidade-only" id="sec-divulgacao">
+        <div class="section-head"><div><h2>Divulgação</h2><p>Gere uma arte de divulgação da campanha (com link e QR Code) e, após o sorteio, o banner dos ganhadores.</p></div></div>
+
+        <div class="panel">
+          <h3>Divulgar uma campanha</h3>
+          <div class="form-grid">
+            <div class="field full"><label>Campanha</label><select id="divCampanha"></select></div>
+          </div>
+          <div style="display:flex; gap:10px; margin-top:14px;">
+            <button class="btn btn-primary" id="btnGerarDivulgacao">🪧 Gerar arte de divulgação</button>
+          </div>
+        </div>
+        <div class="panel" id="divPreviewWrap" style="display:none;"></div>
+
+        <div class="panel">
+          <h3>Banner dos ganhadores</h3>
+          <p class="hint">Disponível somente para campanhas com sorteio já registrado no histórico (oficial).</p>
+          <div class="form-grid">
+            <div class="field full"><label>Campanha</label><select id="divCampanhaGanhadores"></select></div>
+          </div>
+          <div style="display:flex; gap:10px; margin-top:14px;">
+            <button class="btn btn-primary" id="btnGerarBannerGanhadores">🏆 Gerar banner dos ganhadores</button>
+          </div>
+        </div>
+        <div class="panel" id="bannerGanhadoresWrap" style="display:none;"></div>
+      </section>
+
       <!-- ================= AUDITORIA (Qualidade) ================= -->
       <section class="section qualidade-only" id="sec-auditoria">
-        <div class="section-head"><div><h2>Auditoria</h2><p>Registro cronológico das ações realizadas no sistema durante esta sessão.</p></div></div>
+        <div class="section-head"><div><h2>Auditoria</h2><p>Rastreabilidade completa de cada participação, com filtros, gráficos e exportação.</p></div></div>
+
         <div class="panel">
+          <h3>Filtros</h3>
+          <div class="form-grid">
+            <div class="field"><label>Campanha</label><select id="audFiltroCampanha"><option value="">Todas</option></select></div>
+            <div class="field"><label>Setor</label><select id="audFiltroSetor"><option value="">Todos</option></select></div>
+            <div class="field"><label>Filial</label><select id="audFiltroFilial"><option value="">Todas</option></select></div>
+            <div class="field"><label>Função</label><select id="audFiltroFuncao"><option value="">Todas</option></select></div>
+            <div class="field"><label>De</label><input type="date" id="audFiltroDataDe"></div>
+            <div class="field"><label>Até</label><input type="date" id="audFiltroDataAte"></div>
+            <div class="field"><label>Elegibilidade</label><select id="audFiltroStatus"><option value="">Todos</option><option value="elegivel">Elegível</option><option value="excluido">Excluído</option><option value="naoelegivel">Não elegível (≠100%)</option></select></div>
+            <div class="field full"><label>Buscar (nome, matrícula ou código de resposta)</label><input type="text" id="audFiltroBusca" placeholder="Ex: Ana Souza, 100004 ou PPG-2026-08-000012"></div>
+          </div>
+          <div style="display:flex; gap:10px; margin-top:14px;">
+            <button class="btn btn-primary btn-sm" id="audAplicarFiltros">Aplicar filtros</button>
+            <button class="btn btn-outline btn-sm" id="audLimparFiltros">Limpar filtros</button>
+            <button class="btn btn-outline btn-sm" id="audExportXlsx">📊 Exportar .xlsx</button>
+            <button class="btn btn-outline btn-sm" id="audExportPdf">📄 Exportar .pdf</button>
+          </div>
+        </div>
+
+        <div class="sorteio-stats" id="audResumo"></div>
+
+        <div class="two-col">
+          <div class="panel"><h3>Participação por setor</h3><div class="hint">Considera os registros filtrados acima</div><div id="audChartSetor"></div></div>
+          <div class="panel"><h3>Participação por filial</h3><div class="hint">Considera os registros filtrados acima</div><div id="audChartFilial"></div></div>
+        </div>
+        <div class="panel"><h3>Evolução histórica</h3><div class="hint">Participantes por campanha, em ordem cronológica</div><div id="audChartEvolucao"></div></div>
+
+        <div class="panel">
+          <h3>Registro detalhado de participações</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nome</th><th>Matrícula</th><th>CPF</th><th>Função</th><th>Setor</th><th>Filial</th><th>Campanha</th><th>Código</th><th>Início</th><th>Fim</th><th>% Acertos</th><th>Elegibilidade</th><th>Ações</th></tr></thead>
+              <tbody id="tblAuditoriaDetalhe"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Registro de ações do sistema</h3>
+          <div class="hint">Log cronológico de ações administrativas realizadas nesta sessão</div>
           <div class="table-wrap">
             <table>
               <thead><tr><th>Data/hora</th><th>Usuário</th><th>Ação</th><th>Detalhe</th></tr></thead>
@@ -349,8 +452,8 @@
         <div class="section-head"><div><h2>Regras e Transparência</h2><p>Entenda exatamente como o PPG funciona, do início ao sorteio.</p></div></div>
         <div class="mascot-row">
           <div class="mascot-avatar">
-            <img class="m-base" src="assets/mascote-feliz.png" alt="Univaldo" onerror="if(window.mascotImgFallback) mascotImgFallback(this); else this.style.display='none';">
-            <img class="m-blink" src="assets/mascote-piscando.png" alt="" onerror="this.style.display='none'">
+            <img id="regMascotBase" class="m-base" alt="Univaldo" onerror="if(window.mascotImgFallback) mascotImgFallback(this); else this.style.display='none';">
+            <img id="regMascotBlink" class="m-blink" alt="" onerror="this.style.display='none'">
           </div>
           <div class="mascot-speech"><span class="mascot-name">Univaldo</span>Bora entender as regras? É rapidinho, prometo! 😉</div>
         </div>
@@ -459,6 +562,7 @@
 
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="empresa.config.js"></script>
 <script src="script.js"></script>
 </body>

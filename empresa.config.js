@@ -304,3 +304,19 @@ window.EMPRESA_CONFIG.sortearColaboradores = function(qtd, excluirMatriculas){
   const shuffled = [...pool].sort(()=>Math.random()-0.5);
   return shuffled.slice(0, qtd);
 };
+
+/* CPF FICTÍCIO — gerado de forma determinística a partir da matrícula, só para
+   preencher os campos de auditoria (nenhum CPF real é usado em lugar nenhum
+   deste protótipo). O mesmo colaborador sempre recebe o mesmo CPF fictício. */
+window.EMPRESA_CONFIG.cpfFicticio = function(matricula){
+  let seed = 0;
+  const s = String(matricula);
+  for(let i=0;i<s.length;i++) seed = (seed * 31 + s.charCodeAt(i)) >>> 0;
+  const digits = [];
+  for(let i=0;i<9;i++){ seed = (seed * 1103515245 + 12345) >>> 0; digits.push(seed % 10); }
+  // dígitos verificadores fictícios (não seguem o algoritmo oficial — é só formatação)
+  seed = (seed * 1103515245 + 12345) >>> 0; digits.push(seed % 10);
+  seed = (seed * 1103515245 + 12345) >>> 0; digits.push(seed % 10);
+  const d = digits.join('');
+  return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9,11)}`;
+};
