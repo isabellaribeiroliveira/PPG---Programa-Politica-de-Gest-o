@@ -9,37 +9,120 @@
 <body>
 
 <div class="login-screen" id="loginScreen">
-  <div class="login-card">
-    <div class="login-mascot-row">
-      <img id="loginMascotImg" alt="Univaldo, mascote da Univale" class="mascot-figure" onerror="if(window.mascotImgFallback) mascotImgFallback(this); else this.style.display='none';">
+
+  <!-- ===== SAC — Univaldo flutuante, central de ajuda antes do login ===== -->
+  <button class="sac-fab" id="sacFab" type="button" title="Precisa de ajuda para entrar?">
+    <span class="sac-fab-emoji">🎯</span>
+    <span class="sac-fab-badge">?</span>
+  </button>
+  <div class="sac-popup" id="sacPopup">
+    <div class="sac-popup-head">
+      <span class="sac-popup-emoji">🎯</span>
+      <div class="sac-popup-title"><b>Central de Ajuda</b><span>SAC · PPG</span></div>
+      <button type="button" class="sac-close" id="sacClose" aria-label="Fechar">✕</button>
     </div>
-    <div class="login-mark">PPG</div>
-    <h2>Programa Política de Gestão</h2>
-    <p>Acesse com sua matrícula e senha para continuar.</p>
-    <form id="loginForm">
-      <div class="field" style="margin-bottom:12px;"><label>Matrícula</label><input type="text" id="loginMatricula" placeholder="Ex: 1000" required></div>
-      <div class="field" style="margin-bottom:6px;"><label>Senha</label><input type="password" id="loginSenha" placeholder="••••••••" required></div>
-      <div class="login-error" id="loginError">Matrícula ou senha inválida. Use uma das matrículas de demonstração abaixo.</div>
-      <button type="submit" class="btn btn-primary btn-block" style="margin-top:16px;">Entrar</button>
-    </form>
-    <div class="login-demo login-demo-grid">
-      <b>Contas de demonstração</b>
-      <div class="login-demo-col">
-        <span class="ldg-title">Qualidade · senha <b>qualidade2026</b></span>
-        <span class="ldg-row"><b>1000</b> Mariana Queiroz</span>
-        <span class="ldg-row"><b>1001</b> Fernando Ribeiro</span>
-        <span class="ldg-row"><b>1002</b> Juliana Prado</span>
-      </div>
-      <div class="login-demo-col">
-        <span class="ldg-title">Colaborador · senha <b>colab2026</b></span>
-        <span class="ldg-row"><b>2000</b> Carlos Bento — Qualidade</span>
-        <span class="ldg-row"><b>100110</b> Camila Ramos — TI</span>
-        <span class="ldg-row"><b>100028</b> Rodrigo Silva — Manutenção</span>
-        <span class="ldg-row"><b>100171</b> Thiago Barbosa — Operações</span>
-        <span class="ldg-row"><b>100004</b> Paulo Dias — Financeiro <i>(já premiado há pouco — testa a exclusão automática)</i></span>
-        <span class="ldg-row"><b>100023</b> Patrícia Dias — RH</span>
-      </div>
+    <div class="sac-popup-body">
+      <p>Precisando de uma mão para entrar? Aqui vão algumas dicas rápidas:</p>
+      <ul>
+        <li>Sua <b>matrícula</b> e <b>senha</b> são as mesmas do sistema interno da empresa.</li>
+        <li>Esqueceu a senha? Fale com a equipe de <b>Qualidade</b>.</li>
+        <li>Só testando o sistema? Toque em <b>"Ver credenciais de teste"</b>, logo abaixo do botão Entrar.</li>
+        <li>Quer conhecer o programa antes de acessar? Role a tela para baixo 👇</li>
+      </ul>
     </div>
+  </div>
+
+  <!-- ===== Primeira dobra: card de login ===== -->
+  <div class="login-hero">
+    <div class="login-card">
+      <div class="login-mascot-row">
+        <span class="mascot-figure mascot-figure-emoji" id="loginMascotImg">🎯</span>
+      </div>
+      <div class="login-mark">PPG</div>
+      <h2>Programa Política de Gestão</h2>
+      <p id="loginSubtitle">Acesse com sua matrícula e senha para continuar.</p>
+
+      <div class="login-tabs" id="loginTabs">
+        <button type="button" class="login-tab active" data-role="qualidade"><i data-lucide="shield-check"></i> Qualidade</button>
+        <button type="button" class="login-tab" data-role="colaborador"><i data-lucide="user"></i> Colaborador</button>
+      </div>
+
+      <form id="loginForm">
+        <div class="field" style="margin-bottom:12px;"><label>Matrícula</label><input type="text" id="loginMatricula" placeholder="Ex: 1000" required></div>
+        <div class="field" style="margin-bottom:6px;"><label>Senha</label><input type="password" id="loginSenha" placeholder="••••••••" required></div>
+        <div class="login-error" id="loginError">Matrícula ou senha inválida. Toque em "Ver credenciais de teste" para conferir os acessos de demonstração.</div>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top:16px;">Entrar</button>
+      </form>
+
+      <button type="button" class="login-demo-toggle" id="loginDemoToggle">
+        <span>🔑 Ver credenciais de teste</span><i data-lucide="chevron-down"></i>
+      </button>
+      <div class="login-demo-collapsible" id="loginDemoPanel">
+        <div class="login-demo login-demo-grid">
+          <b>Contas de demonstração</b>
+          <div class="login-demo-col" data-role="qualidade">
+            <span class="ldg-title">Qualidade · senha <b>qualidade2026</b></span>
+            <span class="ldg-row"><b>1000</b> Mariana Queiroz</span>
+            <span class="ldg-row"><b>1001</b> Fernando Ribeiro</span>
+            <span class="ldg-row"><b>1002</b> Juliana Prado</span>
+          </div>
+          <div class="login-demo-col" data-role="colaborador">
+            <span class="ldg-title">Colaborador · senha <b>colab2026</b></span>
+            <span class="ldg-row"><b>2000</b> Carlos Bento — Qualidade</span>
+            <span class="ldg-row"><b>100110</b> Camila Ramos — TI</span>
+            <span class="ldg-row"><b>100028</b> Rodrigo Silva — Manutenção</span>
+            <span class="ldg-row"><b>100171</b> Thiago Barbosa — Operações</span>
+            <span class="ldg-row"><b>100004</b> Paulo Dias — Financeiro <i>(já premiado há pouco — testa a exclusão automática)</i></span>
+            <span class="ldg-row"><b>100023</b> Patrícia Dias — RH</span>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" class="login-scroll-hint" id="loginScrollHint">
+        <span>Conheça o programa</span><i data-lucide="chevron-down"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== Segunda dobra: explicação do programa (rolagem) ===== -->
+  <div class="login-landing" id="loginLanding">
+    <section class="ll-block ll-intro">
+      <h3>O que é o PPG?</h3>
+      <p>O <b>Programa Política de Gestão</b> é a forma da empresa reforçar, de tempos em tempos, temas importantes do dia a dia — segurança da informação, qualidade, ética, sustentabilidade e muito mais — de um jeito rápido, transparente e com prêmios reais para quem participa.</p>
+    </section>
+
+    <section class="ll-steps">
+      <div class="ll-step">
+        <div class="ll-step-num">1</div>
+        <h4>📋 Responda o questionário</h4>
+        <p>Poucas perguntas, direto ao ponto, sobre o tema da rodada atual.</p>
+      </div>
+      <div class="ll-step">
+        <div class="ll-step-num">2</div>
+        <h4>🎯 Acerte 100%</h4>
+        <p>Quem alcança 100% de acertos entra automaticamente na lista de elegíveis.</p>
+      </div>
+      <div class="ll-step">
+        <div class="ll-step-num">3</div>
+        <h4>🎉 Concorra ao sorteio</h4>
+        <p>Sorteio auditável e transparente, com distribuição justa entre setores e filiais.</p>
+      </div>
+    </section>
+
+    <section class="ll-block ll-rules">
+      <h3>Critérios de elegibilidade</h3>
+      <ul>
+        <li>✅ Ter 100% de acertos no questionário da rodada.</li>
+        <li>✅ Não ocupar um cargo de liderança impedido de participar (regra oficial do programa).</li>
+        <li>✅ Não ter sido premiado nos últimos 2 anos.</li>
+      </ul>
+      <p class="hint">Todas as regras, o passo a passo do sorteio e o histórico completo ficam disponíveis para consulta em <b>Regras e Transparência</b>, dentro do sistema.</p>
+    </section>
+
+    <footer class="ll-footer">
+      <span>PPG · Programa Política de Gestão</span>
+      <span>Feito com 💚 pela equipe de Qualidade</span>
+    </footer>
   </div>
 </div>
 
@@ -411,7 +494,7 @@
           <h3>Registro detalhado de participações</h3>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Nome</th><th>Matrícula</th><th>CPF</th><th>Função</th><th>Setor</th><th>Filial</th><th>Campanha</th><th>Código</th><th>Início</th><th>Fim</th><th>% Acertos</th><th>Elegibilidade</th><th>Ações</th></tr></thead>
+              <thead><tr><th>Nome</th><th>Matrícula</th><th>CPF</th><th>Função</th><th>Setor</th><th>Filial</th><th>Campanha</th><th>Código</th><th>Início</th><th>Fim</th><th>Duração</th><th>Acertos</th><th>%</th><th>Dispositivo/Sessão</th><th>Elegibilidade</th><th>Ações</th></tr></thead>
               <tbody id="tblAuditoriaDetalhe"></tbody>
             </table>
           </div>
@@ -452,8 +535,7 @@
         <div class="section-head"><div><h2>Regras e Transparência</h2><p>Entenda exatamente como o PPG funciona, do início ao sorteio.</p></div></div>
         <div class="mascot-row">
           <div class="mascot-avatar">
-            <img id="regMascotBase" class="m-base" alt="Univaldo" onerror="if(window.mascotImgFallback) mascotImgFallback(this); else this.style.display='none';">
-            <img id="regMascotBlink" class="m-blink" alt="" onerror="this.style.display='none'">
+            <span class="mascot-emoji mascot-emoji-blink">🎯</span>
           </div>
           <div class="mascot-speech"><span class="mascot-name">Univaldo</span>Bora entender as regras? É rapidinho, prometo! 😉</div>
         </div>
