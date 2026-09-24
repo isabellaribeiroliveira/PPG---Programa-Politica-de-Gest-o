@@ -898,3 +898,13 @@
     .login-landing{ padding:16px 16px 44px; }
     .ll-block{ padding:20px 18px; }
   }
+
+  /* ---------- Transparência de elegibilidade (Meu Resultado) ---------- */
+  .eleg-panel{ margin-top:16px; border-left:4px solid var(--border); animation:cardRise .5s cubic-bezier(.16,1,.3,1); }
+  .eleg-panel h3{ font-size:15px; margin-bottom:8px; }
+  .eleg-panel p{ font-size:13px; color:var(--ink-soft); margin:0 0 8px; line-height:1.5; }
+  .eleg-panel p:last-of-type{ margin-bottom:0; }
+  .eleg-panel.eleg-ok{ border-left-color:var(--success); background:linear-gradient(135deg, rgba(52,199,89,.08), transparent); }
+  .eleg-panel.eleg-excluded{ border-left-color:var(--error); background:linear-gradient(135deg, rgba(255,107,107,.08), transparent); }
+  .eleg-panel.eleg-excluded p b{ color:var(--error); }
+  .eleg-panel #btnVerRegrasElegibilidade{ margin-top:4px; }

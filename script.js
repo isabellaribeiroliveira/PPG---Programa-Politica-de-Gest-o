@@ -325,7 +325,10 @@ function audGetFilteredParticipants(){
       const isExcl = excluded.some(e=>e.matricula===p.matricula);
       if(status==='elegivel' && !isElig) return false;
       if(status==='excluido' && !isExcl) return false;
-      if(status==='naoelegivel' && p.pct===100) return false;
+      const ex = excluded.find(e=>e.matricula===p.matricula);
+      if(status==='naoelegivel' && !(ex && ex.motivos.some(m=>m.includes('100%')))) return false;
+      if(status==='cargoimpedido' && !(ex && ex.motivos.some(m=>m.includes('cargo de liderança')))) return false;
+      if(status==='premiadorecente' && !(ex && ex.motivos.some(m=>m.includes('premiado')))) return false;
     }
     return true;
   });
@@ -333,9 +336,8 @@ function audGetFilteredParticipants(){
 function audEligLabel(p){
   const {eligible, excluded} = evaluateEligibility(p.campaignId);
   const ex = excluded.find(e=>e.matricula===p.matricula);
-  if(ex) return `<span class="badge excluido">${ex.motivo}</span>`;
-  if(eligible.some(e=>e.matricula===p.matricula)) return `<span class="badge finalizada">Elegível</span>`;
-  return `<span class="badge programada">${p.pct}% — não elegível</span>`;
+  if(ex) return `<span class="badge excluido" title="${ex.motivo}">${ex.motivo}</span>`;
+  return `<span class="badge finalizada">Elegível</span>`;
 }
 function renderAuditoriaBarChart(elId, dataObj){
   const el = document.getElementById(elId);
@@ -477,7 +479,7 @@ document.getElementById('audExportXlsx')?.addEventListener('click', ()=>{
     const c = campaigns.find(x=>x.id===p.campaignId);
     const {eligible, excluded} = evaluateEligibility(p.campaignId);
     const ex = excluded.find(e=>e.matricula===p.matricula);
-    const elegStr = ex ? `Excluído — ${ex.motivo}` : (eligible.some(e=>e.matricula===p.matricula) ? 'Elegível' : `${p.pct}% — não elegível`);
+    const elegStr = ex ? `Excluído — ${ex.motivo}` : 'Elegível';
     return [p.nome,p.matricula,p.cpf||'',p.funcao||p.cargo,p.setor,p.filial,c?c.nome:p.campaignId,p.codigoResposta||'',
       p.dataInicio?fmtDateTime(p.dataInicio):'', p.dataFim?fmtDateTime(p.dataFim):fmtDateTime(p.data),
       duracaoLabel(p.dataInicio, p.dataFim||p.data), p.acertosQtd!=null?`${p.acertosQtd}/${p.totalQuestoes}`:'', p.pct+'%',
@@ -495,7 +497,7 @@ document.getElementById('audExportPdf')?.addEventListener('click', ()=>{
     const c = campaigns.find(x=>x.id===p.campaignId);
     const {eligible, excluded} = evaluateEligibility(p.campaignId);
     const ex = excluded.find(e=>e.matricula===p.matricula);
-    const elegStr = ex ? `Excluído` : (eligible.some(e=>e.matricula===p.matricula) ? 'Elegível' : 'Não elegível');
+    const elegStr = ex ? `Excluído — ${ex.motivo}` : 'Elegível';
     return [p.nome,p.matricula,p.setor,p.filial,c?c.nome:p.campaignId,p.codigoResposta||'',duracaoLabel(p.dataInicio,p.dataFim||p.data),p.pct+'%',p.dispositivo||'',elegStr];
   });
   openPrintReport("Auditoria de participações", headers, rows, `Total filtrado: ${list.length} registro(s)`);
@@ -566,12 +568,15 @@ function isWithinTwoYears(matricula, refDate){
   return wonHistory.some(w => w.matricula === matricula && (refDate - w.data) < twoYearsMs);
 }
 function evaluateEligibility(campaignId){
-  const all = campaignParticipants(campaignId).filter(p=>p.pct===100);
+  const all = campaignParticipants(campaignId);
   const eligible = [], excluded = [];
   const now = new Date();
   all.forEach(p=>{
-    if(CARGOS_IMPEDIDOS.includes(p.cargo)) excluded.push({...p, motivo:`Cargo impedido (${p.cargo})`});
-    else if(isWithinTwoYears(p.matricula, now)) excluded.push({...p, motivo:"Premiado(a) em campanha do PPG nos últimos 2 anos"});
+    const motivos = [];
+    if(p.pct !== 100) motivos.push(`Não atingiu 100% de acertos no questionário (fez ${p.pct}%)`);
+    if(CARGOS_IMPEDIDOS.includes(p.cargo)) motivos.push(`Ocupa cargo de liderança impedido de participar (${p.cargo})`);
+    if(isWithinTwoYears(p.matricula, now)) motivos.push("Já foi premiado(a) em uma campanha do PPG nos últimos 2 anos");
+    if(motivos.length) excluded.push({...p, motivo: motivos.join(" · "), motivos});
     else eligible.push(p);
   });
   return {eligible, excluded};
@@ -1519,6 +1524,22 @@ function confettiHTML(){
 /* Tela final — exatamente o que o colaborador deve ver, nada de gabarito ou
    detalhamento de acertos/erros por pergunta (isso fica exclusivo da Qualidade). */
 function renderQuizDoneInto(container, c, participant){
+  const roundClosed = campaignAccessStatus(c) !== 'aberta';
+
+  if(!roundClosed){
+    /* Rodada ainda aberta: o colaborador só sabe que a resposta foi registrada.
+       Nada de nota, acertos ou confete — isso só é revelado após o encerramento. */
+    container.innerHTML = `
+      <div class="duo-done">
+        <span class="mascot-figure mascot-figure-emoji">${MASCOT_EMOJI}</span>
+        <h2>Resposta registrada!</h2>
+        <p>Sua participação em <b>${c.nome}</b> foi registrada com sucesso.</p>
+        <p class="hint">Por transparência com todos os participantes, o resultado só é liberado depois que a rodada encerrar, em <b>${fmtDateTime(new Date(c.fim))}</b>. Volte aqui depois desse prazo para ver seu desempenho.</p>
+      </div>
+      ${mascotBubble("Sua resposta está registrada e segura. Assim que a rodada encerrar, você vê aqui quantas você acertou. Até lá! 🤝")}`;
+    return;
+  }
+
   const correctCount = participant.respostasCorretas ? participant.respostasCorretas.filter(Boolean).length : Math.round(participant.pct/100*c.questoes.length);
   const perfeito = participant.pct === 100;
   const mascotEmoji = perfeito ? "🎉" : MASCOT_EMOJI;
@@ -1605,10 +1626,14 @@ function renderHistoricoColaborador(){
   let html = mascotBubble("Aqui está tudo que você já respondeu até agora. Bora conferir? 📋");
   html += mine.map(p=>{
     const c = campaigns.find(x=>x.id===p.campaignId);
+    const roundClosed = c ? campaignAccessStatus(c) !== 'aberta' : true;
+    const resultadoHtml = roundClosed
+      ? `<span style="font-family:'Manrope'; font-weight:800; font-size:18px; color:var(--secondary);">${p.pct}%</span>`
+      : `<span class="badge programada" title="O resultado é liberado após o encerramento da rodada">🔒 Aguardando encerramento</span>`;
     return `<div class="panel" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
       <div><h3 style="font-size:14.5px;">${c ? c.nome : p.campaignId}</h3><p class="hint" style="margin-top:4px;">Respondido em ${fmtDateTime(p.data)}</p></div>
       <div style="display:flex; align-items:center; gap:12px;">
-        <span style="font-family:'Manrope'; font-weight:800; font-size:18px; color:var(--secondary);">${p.pct}%</span>
+        ${resultadoHtml}
         <button class="btn btn-outline btn-sm" onclick="openQuiz('${p.campaignId}')">Ver resultado</button>
       </div>
     </div>`;
@@ -1627,6 +1652,32 @@ function renderMeuResultado(){
   const latest = mine[0];
   const c = campaigns.find(x=>x.id===latest.campaignId);
   renderQuizDoneInto(body, c, latest);
+
+  const roundClosed = campaignAccessStatus(c) !== 'aberta';
+  if(!roundClosed) return; // nada de elegibilidade enquanto a rodada não encerra — isso revelaria o desempenho
+
+  /* Transparência total: o colaborador vê exatamente se está elegível ao
+     sorteio e, se não estiver, o(s) motivo(s) exato(s) — os mesmos critérios
+     aplicados a todo mundo, sem exceção. */
+  const {eligible, excluded} = evaluateEligibility(latest.campaignId);
+  const souElegivel = eligible.some(e=>e.matricula===currentUser.matricula);
+  const meuExcluido = excluded.find(e=>e.matricula===currentUser.matricula);
+  const elegHtml = souElegivel
+    ? `<div class="panel eleg-panel eleg-ok">
+        <h3>✅ Você está elegível para o sorteio desta rodada</h3>
+        <p>Isso significa que você atingiu 100% de acertos, sua função não está entre as impedidas de participar e você não foi premiado(a) nos últimos 2 anos. Boa sorte! 🍀</p>
+      </div>`
+    : meuExcluido
+      ? `<div class="panel eleg-panel eleg-excluded">
+          <h3>🔒 Você não está elegível para o sorteio desta rodada</h3>
+          <p><b>Motivo:</b> ${meuExcluido.motivo}</p>
+          <p class="hint">A elegibilidade é calculada automaticamente pelo sistema, seguindo os mesmos 3 critérios oficiais para todos os colaboradores, sem exceção. Veja o detalhamento completo das regras abaixo.</p>
+          <button class="btn btn-outline btn-sm" id="btnVerRegrasElegibilidade">📜 Ver regras completas</button>
+        </div>`
+      : '';
+  body.insertAdjacentHTML('beforeend', elegHtml);
+  const btnRegras = document.getElementById('btnVerRegrasElegibilidade');
+  if(btnRegras) btnRegras.addEventListener('click', ()=> document.querySelector('[data-target="regulamento"]').click());
 }
 
 /* ======================= SORTEIO ======================= */
